@@ -1,59 +1,74 @@
 #include "hash_tables.h"
-/**
- * link_nodes-Create a linked nodes
- * @key: Is the key to map
- * @value:Is the value from the key
- * Return: The new linked element
- */
-hash_node_t *link_nodes(const char *key, const char *value)
-{
-	hash_node_t *new_element;
 
-	new_element = malloc(sizeof(hash_table_t *));
-	if (new_element == NULL)
-		return (NULL);
-	new_element->key = strdup(key);
-	if (new_element->key == NULL)
-		return (NULL);
-	new_element->value = strdup(value);
-	if (new_element->value == NULL)
-		return (NULL);
-	return (new_element);
+/**
+ * new_node - allocates a new node with checking
+ * @key: the string key
+ * @value: the string value
+ *
+ * Return: the node or NULL
+ */
+hash_node_t *new_node(const char *key, const char *value)
+{
+	hash_node_t *node;
+
+	node = calloc(1, sizeof(hash_node_t));
+	if (!node)
+		return (0);
+
+	node->key = strdup(key);
+	if (!node->key)
+	{
+		free(node);
+		return (0);
+	}
+	node->value = strdup(value);
+	if (!node->value)
+	{
+		free(node->key);
+		free(node);
+		return (0);
+	}
+
+	return (node);
 }
 
+
 /**
- * hash_table_set -function that adds an element to the HT
- * @ht: Reference to hash table
- * @key:Is the key that will to map
- * @value:Is the value of each key
- * Return: 1 if is succes 0 is not
+ * hash_table_set - adds an element to a hash table
+ * @ht: pointer to hash table
+ * @key: the string key
+ * @value: the string value
+ *
+ * Return: 1 on success, 0 otherwise
  */
 int hash_table_set(hash_table_t *ht, const char *key, const char *value)
 {
-	unsigned int ind;
-	hash_node_t *map_node, *j;
+	hash_node_t *node = NULL, *head;
+	unsigned long int index;
 
-	if (ht == NULL || key == NULL || value == '\0')
+	if (!ht || !key || !*key || !value)
 		return (0);
 
-	ind = key_index((const unsigned char *) key, ht->size);
-
-	for (j = ht->array[ind]; j != NULL; j = j->next)
+	index = key_index((const unsigned char *)key, ht->size);
+	head = ht->array[index];
+	while (head)
 	{
-		if ((strcmp(j->key, key) == 0) && (strcmp(j->value, value) != 0))
+		if (!strcmp(key, head->key))
 		{
-			free(j->value);
-			j->value = strdup(value);
-			if (j->value == NULL)
-				return (0);
-		}
-		return (1);
-	}
-	map_node = link_nodes(key, value);
+			char *_value = strdup(value);
 
-	if (map_node == NULL)
+			if (!_value)
+				return (0);
+			free(head->value);
+			head->value = _value;
+			return (1);
+		}
+		head = head->next;
+	}
+	node = new_node(key, value);
+	if (!node)
 		return (0);
-	map_node->next = ht->array[ind];
-	ht->array[ind] = map_node;
+	node->next = ht->array[index];
+	ht->array[index] = node;
 	return (1);
 }
